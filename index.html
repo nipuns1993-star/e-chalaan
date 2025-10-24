@@ -87,7 +87,7 @@
     <script>
         // Function to calculate validity (5 hours from Issued At) and check if expired
         function getValidityAndExpiration(issuedAt) {
-            const currentDate = new Date('2025-10-17T16:34:00+05:30'); // October 17, 2025, 4:34 PM IST
+            const currentDate = new Date('2025-10-25T02:27:00+05:30'); // October 25, 2025, 2:27 AM IST
             if (!issuedAt || issuedAt.trim() === '') return { validityRange: 'N/A', isExpired: '' };
             const issuedDate = new Date(issuedAt.replace(/(\d{2})-(\d{2})-(\d{4})\s(\d{2}):(\d{2})/, '$2/$1/$3 $4:$5'));
             if (isNaN(issuedDate.getTime())) return { validityRange: 'अमान्य तिथि', isExpired: '' };
@@ -101,7 +101,7 @@
         fetch('data.csv')
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('CSV file not found or inaccessible. Please ensure the file exists and is uploaded to the repository.');
+                    throw new Error('CSV file not found or inaccessible. Please ensure "data.csv" is in the repository root and the site has deployed (check https://github.com/yourusername/e-chalaan/actions).');
                 }
                 return response.text();
             })
@@ -114,7 +114,7 @@
 
                     const [code, status, challanNo, vehicle, driver, quantity, route, gst, amount, issuedAt] = cols;
                     const isValid = status && status.toLowerCase() === 'published'; // Assume "published" means valid
-                    const { validityRange, isExpired, validUntil } = getValidityAndExpiration(issuedAt || '');
+                    const { validityRange, isExpired } = getValidityAndExpiration(issuedAt || '');
 
                     // Set validity status
                     document.getElementById('validityStatus').textContent = isValid ? 'Valid' : 'Expired';
