@@ -1,3 +1,4 @@
-code,status,Challan No,Vehicle,Driver,Quantity (MT),Route,GST %,Amount,Issued At,Concessionary,Location,MineralGranted,QuantityGranted,Seller,Consignee,Mineral,ValidityStart,ValidityEnd,QRData
+code, status, Challan No, Vehicle, Driver, Quantity (MT), Route, GST %, Amount, Issued At, Concessionary, Location, MineralGranted, QuantityGranted, Seller, Consignee, Mineral, ValidityStart, ValidityEnd, QRData
 AB12CD,published,JK08Y-19112008170,RJ13GC0650,GULJINDER SINGH,24,PANDORI ganganagar,5,7837.44,17-10-2025 14:42
+
 
