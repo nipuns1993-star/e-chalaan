@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My e-Challan</title>
+    <title>e-Challan Viewer</title>
     <style>
         body {
             background-color: #FFA500; /* Bright orange background */
-            color: #FFD700; /* Gold text color */
-            font-family: Arial, sans-serif;
+            color: #FFD700; /* Gold text color for body */
+            font-family: Arial, sans-serif; /* Default sans-serif, adjust if screenshot specifies */
             margin: 0;
             padding: 20px;
         }
@@ -18,16 +18,24 @@
             border: 2px solid #FFD700; /* Gold border */
             max-width: 800px;
             margin: 0 auto; /* Centers the container */
-            border-radius: 5px; /* Rounded corners */
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
         }
         .note {
             color: #FF4500; /* Reddish-orange for warnings */
             text-align: center;
             font-weight: bold;
+            font-size: 14px; /* Inferred size */
             margin-bottom: 20px;
             padding: 10px;
             background-color: rgba(255, 69, 0, 0.1); /* Light red background */
+        }
+        .header {
+            color: #000000; /* Black for formal header */
+            text-align: center;
+            font-size: 18px; /* Inferred size */
+            font-weight: bold;
+            margin-bottom: 15px;
         }
         .section {
             margin: 20px 0;
@@ -36,21 +44,23 @@
             border-radius: 5px;
         }
         .image {
-            text-align: center;
+            text-align: center; /* Centered per PDF */
             margin-bottom: 15px;
         }
         .item {
             margin: 10px 0;
-            font-size: 1.1rem;
-            display: flex;
-            flex-direction: column; /* Stack label and value */
+            font-size: 12px; /* Inferred body size */
         }
         .label {
             font-weight: bold;
-            margin-bottom: 5px;
+            display: inline-block;
+            width: 300px; /* Fixed width for alignment, adjust per screenshot */
         }
         .value {
-            padding-left: 20px; /* Indent value from label */
+            display: inline-block;
+            padding-left: 20px;
+            word-wrap: break-word;
+            max-width: 450px; /* Allow wrapping */
         }
         .expired {
             color: #FF4500;
@@ -60,79 +70,124 @@
             text-align: center;
             margin: 10px 0;
             font-style: italic;
+            font-size: 12px;
+        }
+        .hindi {
+            font-style: italic;
+            font-size: 11px; /* Slightly smaller for Hindi */
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <p class="note">Note: The Information mentioned in e-Challan, Such as (Validity and Vehicle No.) should be matched with the information mentioned in the https://geologymining.jk.gov.in/ which can be seen after scanning the QR code encrypted on e-Challan.<br>सूचना: ई-चालान में उल्लिखित जानकारी, जैसे (वैधता और वाहन संख्या) का मिलान https://geologymining.jk.gov.in/ में उल्लिखित जानकारी से किया जाना चाहिए, जिसे ई-चालान पर एन्क्रिप्ट किए गए क्यूआर कोड को स्कैन करने के बाद देखा जा सकता है।</p>
+        <p class="note">Note: The Information mentioned in e-Challan, Such as (Validity and Vehicle No.) should be matched with the information mentioned in the https://geologymining.jk.gov.in/ which can be seen after scanning the QR code encrypted on e-Challan.<br><span class="hindi">सूचना: ई-चालान में उिल्लिखत जानकारी, जैसे (वैधता और वाहन संख्या) का िमलान https://geologymining.jk.gov.in/ में उिल्लिखत जानकारी से िकया जाना चािहए, िजसे ई-चालान पर छपे क्यूआर कोड को स्कैन करने के बाद देखा जा सकता है।</span></p>
         <div class="section">
+            <h2 class="header">E-CHALLAN</h2>
             <div class="image">
-                <img src="image1.jpeg" alt="e-Challan QR Code" style="max-width: 100%; height: auto;">
+                <img id="qrImage" src="" alt="e-Challan QR Code" style="max-width: 150px; height: auto;">
+                <div id="qrPlaceholder" class="item">QR Code will be generated here</div>
             </div>
-            <div class="item"><span class="label">e-Challan valid or expired:</span><span class="value" id="validityStatus"></span></div>
-            <div class="item"><span class="label">इचलान की अवधि समाप्त हो गई है:</span><span class="value" id="validityStatusHindi"></span></div>
-            <div class="url">URL: <a href="https://geologymining.jk.gov.in/" style="color: #FFD700; text-decoration: underline;">https://geologymining.jk.gov.in/</a></div>
             <div class="item"><span class="label">Challan No.:</span><span class="value" id="challanNo"></span></div>
+            <div class="item"><span class="label">e-Challan valid or expired:</span><span class="value" id="validityStatus"></span></div>
+            <div class="item"><span class="label"><span class="hindi">इचलान की अवधि समाप्त हो गई है:</span></span><span class="value" id="validityStatusHindi"></span></div>
+            <div class="url">URL: <a href="https://geologymining.jk.gov.in/" style="color: #FFD700; text-decoration: underline;">https://geologymining.jk.gov.in/</a></div>
         </div>
-        <div class="section" id="detailsSection">
-            <div class="item"><span class="label">Name & Location of Seller:</span><span class="value" id="seller"></span></div>
-            <div class="item"><span class="label">Validity:</span><span class="value" id="validity"></span></div>
-            <div class="item"><span class="label">Route of the Transportation:</span><span class="value" id="route"></span></div>
-            <div class="item"><span class="label">Vehicle no.:</span><span class="value" id="vehicle"></span></div>
-            <div class="item"><span class="label">Name & Address of Consignee:</span><span class="value" id="consignee"></span></div>
-            <div class="item"><span class="label">Mineral:</span><span class="value" id="mineral"></span></div>
+        <div class="section">
+            <div class="item"><span class="label">1. Type of mineral concessions:</span><span class="value" id="concessionType"></span></div>
+            <div class="item"><span class="label">Issuing date:</span><span class="value" id="issuingDate"></span></div>
+            <div class="item"><span class="label">Valid upto:</span><span class="value" id="validUpto"></span></div>
+            <div class="item"><span class="label">2. Name & Style of Concessionary:</span><span class="value" id="concessionary"></span></div>
+            <div class="item"><span class="label">3. Location of mineral concession area:</span><span class="value" id="location"></span></div>
+            <div class="item"><span class="label">4. Type of mineral Granted:</span><span class="value" id="mineralGranted"></span></div>
+            <div class="item"><span class="label">5. Quantity of mineral granted:</span><span class="value" id="quantityGranted"></span></div>
+            <div class="item"><span class="label">6. Name & Location of Stone crusher Unit and Holder:</span><span class="value" id="seller"></span></div>
+            <div class="item"><span class="label">7. Type of Finished Products:</span><span class="value" id="finishedProducts"></span></div>
+            <div class="item"><span class="label">8. Quantity of mineral dispatched:</span><span class="value" id="quantityDispatched"></span></div>
+            <div class="item"><span class="label">9. Date & Time of dispatch:</span><span class="value" id="dispatchDate"></span></div>
+            <div class="item"><span class="label">10. Route of the Transportation:</span><span class="value" id="route"></span></div>
+            <div class="item"><span class="label">11. Rate of Mineral:</span><span class="value" id="rate"></span></div>
+            <div class="item"><span class="label">Total Amount (Excluding GST and Transportation charges):</span><span class="value" id="amount"></span></div>
+            <div class="item"><span class="label">12. GST Bill/No.:</span><span class="value" id="gstBill"></span></div>
+            <div class="item"><span class="label">GST Quantity:</span><span class="value" id="gstQuantity"></span></div>
+            <div class="item"><span class="label">GST Amount:</span><span class="value" id="gstAmount"></span></div>
+            <div class="item"><span class="label">13. Vehicle No.:</span><span class="value" id="vehicle"></span></div>
+            <div class="item"><span class="label">14. Name & Address of Consignee / Buyer / Purchaser:</span><span class="value" id="consignee"></span></div>
+            <div class="item"><span class="label">15. Name & Phone No. of Driver:</span><span class="value" id="driver"></span></div>
         </div>
     </div>
     <script>
-        // Function to calculate validity (5 hours from Issued At) and check if expired
-        function getValidityAndExpiration(issuedAt) {
-            const currentDate = new Date('2025-10-25T02:27:00+05:30'); // October 25, 2025, 2:27 AM IST
-            if (!issuedAt || issuedAt.trim() === '') return { validityRange: 'N/A', isExpired: '' };
-            const issuedDate = new Date(issuedAt.replace(/(\d{2})-(\d{2})-(\d{4})\s(\d{2}):(\d{2})/, '$2/$1/$3 $4:$5'));
-            if (isNaN(issuedDate.getTime())) return { validityRange: 'अमान्य तिथि', isExpired: '' };
-            const validUntil = new Date(issuedDate.getTime() + 5 * 60 * 60 * 1000); // Add 5 hours
-            const validityRange = `${issuedAt} से ${validUntil.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })} तक`;
-            const isExpired = validUntil < currentDate ? ' <span class="expired">(समाप्त)</span>' : '';
-            return { validityRange, isExpired, validUntil };
+        // Function to generate QR code image URL
+        function generateQR(qrData, challanNo) {
+            const baseURL = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=";
+            const encodedData = encodeURIComponent(`data=${qrData}&ai=${challanNo}`);
+            return `${baseURL}${encodedData}`;
+        }
+
+        // Function to check if validity is expired
+        function isValidityExpired(validityStart, validityEnd) {
+            const currentDate = new Date('2025-10-26T00:25:00+05:30'); // October 26, 2025, 12:25 AM IST
+            const startDate = new Date(validityStart.replace(/(\d{2})-(\d{2})-(\d{4})\s(\d{2}):(\d{2})\s(PM|AM)/i, '$2/$1/$3 $4:$5 $6'));
+            const endDate = new Date(validityEnd.replace(/(\d{2})-(\d{2})-(\d{4})\s(\d{2}):(\d{2})\s(PM|AM)/i, '$2/$1/$3 $4:$5 $6'));
+            return endDate < currentDate ? ' <span class="expired">(Expired)</span>' : '';
         }
 
         // Fetch and display CSV data
         fetch('data.csv')
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('CSV file not found or inaccessible. Please ensure "data.csv" is in the repository root and the site has deployed (check https://github.com/yourusername/e-chalaan/actions).');
+                    throw new Error('CSV file not found or inaccessible. Please ensure "data.csv" is in the repository root.');
                 }
                 return response.text();
             })
             .then(data => {
-                const rows = data.trim().split('\n').slice(1); // Skip header row
+                const rows = data.trim().split('\n').slice(1); // Skip header
                 rows.forEach(row => {
-                    if (!row || row.trim() === '') return; // Skip completely empty or blank rows
+                    if (!row || row.trim() === '') return;
                     const cols = row.split(',');
-                    if (cols.length < 10) return; // Ensure all fields exist (10 columns)
+                    if (cols.length < 20) return; // Expect expanded CSV with 20 columns
 
-                    const [code, status, challanNo, vehicle, driver, quantity, route, gst, amount, issuedAt] = cols;
-                    const isValid = status && status.toLowerCase() === 'published'; // Assume "published" means valid
-                    const { validityRange, isExpired } = getValidityAndExpiration(issuedAt || '');
+                    const [code, status, challanNo, vehicle, driverPhone, quantityDispatched, route, gst, amount, issuedAt, concessionary, location, mineralGranted, quantityGranted, seller, consignee, mineral, validityStart, validityEnd, qrData] = cols;
+                    const isValid = status && status.toLowerCase() === 'published';
+                    const expiredNote = isValidityExpired(validityStart, validityEnd);
+                    const qrUrl = qrData ? generateQR(qrData, challanNo) : '';
+
+                    // Set QR
+                    if (qrUrl) {
+                        document.getElementById('qrImage').src = qrUrl;
+                        document.getElementById('qrPlaceholder').style.display = 'none';
+                    }
 
                     // Set validity status
                     document.getElementById('validityStatus').textContent = isValid ? 'Valid' : 'Expired';
                     document.getElementById('validityStatusHindi').textContent = isValid ? 'वैध' : 'इचलान की अवधि समाप्त हो गई है';
 
-                    // Set details from CSV
+                    // Set details
                     document.getElementById('challanNo').textContent = challanNo || 'N/A';
-                    document.getElementById('seller').textContent = `M/s S.K. Stone Crusher Pandori, Kathua`; // Static for now
-                    document.getElementById('validity').textContent = validityRange + (isExpired || '');
-                    document.getElementById('route').textContent = `Source ${route || 'N/A'}-GOOND-NAGRI-LAKHANPUR Destination FIROZPUR [SAKTACHAK CAMP]`;
+                    document.getElementById('concessionType').textContent = 'OTHER'; // Static for now
+                    document.getElementById('issuingDate').textContent = '30-07-2021'; // Static for now
+                    document.getElementById('validUpto').textContent = '29-07-2026'; // Static for now
+                    document.getElementById('concessionary').textContent = concessionary || 'N/A';
+                    document.getElementById('location').textContent = location || 'N/A';
+                    document.getElementById('mineralGranted').textContent = mineralGranted || 'N/A';
+                    document.getElementById('quantityGranted').textContent = quantityGranted || 'N/A';
+                    document.getElementById('seller').textContent = seller || 'N/A';
+                    document.getElementById('finishedProducts').textContent = mineral || 'N/A';
+                    document.getElementById('quantityDispatched').textContent = quantityDispatched || 'N/A';
+                    document.getElementById('dispatchDate').textContent = validityStart || 'N/A';
+                    document.getElementById('route').textContent = route || 'N/A';
+                    document.getElementById('rate').textContent = `Rs. ${gst ? (amount / quantityDispatched * 100 / (100 + gst)).toFixed(2) : 'N/A'}`;
+                    document.getElementById('amount').textContent = `Rs. ${amount || 'N/A'}`;
+                    document.getElementById('gstBill').textContent = '01ACOFS3764P1ZI'; // Static for now
+                    document.getElementById('gstQuantity').textContent = `${gst || 'N/A'}%`;
+                    document.getElementById('gstAmount').textContent = `Rs. ${gst ? (amount * gst / 100).toFixed(2) : 'N/A'}`;
                     document.getElementById('vehicle').textContent = vehicle || 'N/A';
-                    document.getElementById('consignee').textContent = `MEGHA ENGINEERING INFRASTRUCTURE LTD. THROUGH SHIV TRADING CO., SAKTACHAK`; // Static for now
-                    document.getElementById('mineral').textContent = `Aggregate (Crushed Bajri) (06-75 mm) (48 MT)`; // Static for now
+                    document.getElementById('consignee').textContent = consignee || 'N/A';
+                    document.getElementById('driver').textContent = `${driverPhone ? driverPhone.split(',')[0] : 'N/A'}, ${driverPhone ? driverPhone.split(',')[1] : 'N/A'}`;
                 });
             })
             .catch(error => {
                 console.error('Error fetching CSV:', error);
-                document.getElementById('detailsSection').innerHTML = `<p class="note">डेटा लोड करने में त्रुटि। कंसोल जांचें: ${error.message}</p>`;
+                document.getElementById('detailsSection').innerHTML = `<p class="note">डेटा लोड करने में त्रुटि: ${error.message}</p>`;
             });
     </script>
 </body>
