@@ -1,194 +1,454 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>e-Challan Viewer</title>
-    <style>
-        body {
-            background-color: #FFA500; /* Bright orange background */
-            color: #FFD700; /* Gold text color for body */
-            font-family: Arial, sans-serif; /* Default sans-serif, adjust if screenshot specifies */
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            background-color: #FF8C00; /* Darker orange for the main box */
-            padding: 20px;
-            border: 2px solid #FFD700; /* Gold border */
-            max-width: 800px;
-            margin: 0 auto; /* Centers the container */
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-        }
-        .note {
-            color: #FF4500; /* Reddish-orange for warnings */
-            text-align: center;
-            font-weight: bold;
-            font-size: 14px; /* Inferred size */
-            margin-bottom: 20px;
-            padding: 10px;
-            background-color: rgba(255, 69, 0, 0.1); /* Light red background */
-        }
-        .header {
-            color: #000000; /* Black for formal header */
-            text-align: center;
-            font-size: 18px; /* Inferred size */
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-        .section {
-            margin: 20px 0;
-            padding: 15px;
-            border: 1px solid #FFD700;
-            border-radius: 5px;
-        }
-        .image {
-            text-align: center; /* Centered per PDF */
-            margin-bottom: 15px;
-        }
-        .item {
-            margin: 10px 0;
-            font-size: 12px; /* Inferred body size */
-        }
-        .label {
-            font-weight: bold;
-            display: inline-block;
-            width: 300px; /* Fixed width for alignment, adjust per screenshot */
-        }
-        .value {
-            display: inline-block;
-            padding-left: 20px;
-            word-wrap: break-word;
-            max-width: 450px; /* Allow wrapping */
-        }
-        .expired {
-            color: #FF4500;
-            font-weight: bold;
-        }
-        .url {
-            text-align: center;
-            margin: 10px 0;
-            font-style: italic;
-            font-size: 12px;
-        }
-        .hindi {
-            font-style: italic;
-            font-size: 11px; /* Slightly smaller for Hindi */
-        }
-    </style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>E-Challan — Viewer</title>
+
+  <!-- PapaParse for CSV parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
+
+  <style>
+    /* --- Overall page --- */
+    :root{
+      --page-bg: #f2f4f7;        /* light grey page background */
+      --paper-bg: #ffffff;      /* paper white */
+      --text: #000000;          /* main text black */
+      --muted: #444444;         /* muted / secondary text */
+      --accent: #0b5a8a;        /* dark blue accent for header */
+      --line: #d9d9d9;
+      --small: 12px;
+      --label-size: 14px;
+      --value-size: 13px;
+      --heading-size: 22px;
+      --title-size: 18px;
+      --hindi-size: 12px;
+    }
+
+    html,body{ height:100%; margin:0; background:var(--page-bg); font-family: "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif; color:var(--text); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+    .paper{
+      max-width:900px;
+      margin:22px auto;
+      background:var(--paper-bg);
+      border-radius:6px;
+      padding:18px 20px;
+      box-shadow:0 10px 30px rgba(8,20,30,0.06);
+      border:1px solid rgba(0,0,0,0.03);
+    }
+
+    /* --- Header row: emblem | title block | meta --- */
+    .header{
+      display:grid;
+      grid-template-columns:82px 1fr 240px;
+      gap:12px;
+      align-items:center;
+      margin-bottom:10px;
+    }
+    .emblem{
+      width:82px;
+      height:82px;
+      border-radius:6px;
+      background:linear-gradient(180deg,#0b5a8a,#0f3b5a);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      text-align:center;
+      font-size:12px;
+      line-height:1.05;
+      padding:8px;
+    }
+    .titleblock{
+      text-align:center;
+    }
+    .titleblock .gov{
+      font-size:var(--title-size);
+      font-weight:700;
+      color:var(--accent);
+      margin:0;
+      letter-spacing:0.2px;
+    }
+    .titleblock .dept{
+      margin:4px 0 0;
+      font-size:15px;
+      font-weight:600;
+      color:var(--text);
+    }
+    .titleblock .rule{
+      margin-top:6px;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .meta{
+      text-align:right;
+      font-size:13px;
+      color:var(--text);
+    }
+    .meta .big{
+      font-weight:800;
+      font-size:15px;
+      color:var(--text);
+    }
+    .meta .small{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    hr.sep{
+      border:0;
+      border-top:1px dashed var(--line);
+      margin:12px 0;
+    }
+
+    /* --- Notice paragraph at top --- */
+    .notice{
+      background:transparent;
+      color:var(--muted);
+      font-size:13px;
+      padding:6px 0 10px 0;
+      line-height:1.35;
+    }
+    .notice .hindi{ display:block; margin-top:6px; font-style:italic; font-size:var(--hindi-size); color:var(--muted) }
+
+    /* --- Content grid --- */
+    .content{
+      display:grid;
+      grid-template-columns: 1fr 260px;
+      gap:16px;
+      align-items:start;
+    }
+
+    /* left: details card */
+    .card{
+      background:var(--paper-bg);
+      padding:8px 12px;
+      border-radius:4px;
+      border:1px solid var(--line);
+    }
+    .label{ display:inline-block; width:340px; font-weight:700; font-size:var(--label-size); color:var(--text); vertical-align:top }
+    .value{ display:inline-block; font-size:var(--value-size); color:var(--muted); max-width:420px; vertical-align:top; word-break:break-word; }
+    .row{ margin:8px 0; }
+
+    /* mineral block top */
+    .mineralTitle{
+      font-weight:700;
+      font-size:15px;
+      margin-bottom:6px;
+      color:var(--text);
+    }
+    .mineralDetail{
+      font-size:14px;
+      color:var(--muted);
+      margin-bottom:10px;
+    }
+
+    /* right: QR card */
+    .qrcard{
+      background:var(--paper-bg);
+      padding:12px;
+      border-radius:4px;
+      border:1px solid var(--line);
+      text-align:center;
+    }
+    .qrbox{
+      width:180px;
+      height:180px;
+      margin:6px auto;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid #e7e7e7;
+      background:#fff;
+    }
+    .qrbox img{ max-width:100%; max-height:100%; object-fit:contain; }
+
+    .url{
+      margin-top:8px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .muted-small{ color:var(--muted); font-size:13px }
+
+    /* small signatures / footer */
+    .signnote{
+      margin-top:14px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    /* Print rules */
+    @media print{
+      body{ background:#fff }
+      .paper{ box-shadow:none; border-radius:0; margin:0; padding:12mm; }
+    }
+
+    /* Responsive */
+    @media (max-width:840px){
+      .header{ grid-template-columns:64px 1fr; grid-auto-rows:auto; }
+      .meta{ text-align:left; margin-top:8px; grid-column:1 / -1; }
+      .content{ grid-template-columns: 1fr; }
+      .label{ width:140px; display:block; margin-bottom:4px; font-size:var(--label-size) }
+      .value{ display:block; margin-left:0; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <p class="note">Note: The Information mentioned in e-Challan, Such as (Validity and Vehicle No.) should be matched with the information mentioned in the https://geologymining.jk.gov.in/ which can be seen after scanning the QR code encrypted on e-Challan.<br><span class="hindi">सूचना: ई-चालान में उिल्लिखत जानकारी, जैसे (वैधता और वाहन संख्या) का िमलान https://geologymining.jk.gov.in/ में उिल्लिखत जानकारी से िकया जाना चािहए, िजसे ई-चालान पर छपे क्यूआर कोड को स्कैन करने के बाद देखा जा सकता है।</span></p>
-        <div class="section">
-            <h2 class="header">E-CHALLAN</h2>
-            <div class="image">
-                <img id="qrImage" src="" alt="e-Challan QR Code" style="max-width: 150px; height: auto;">
-                <div id="qrPlaceholder" class="item">QR Code will be generated here</div>
-            </div>
-            <div class="item"><span class="label">Challan No.:</span><span class="value" id="challanNo"></span></div>
-            <div class="item"><span class="label">e-Challan valid or expired:</span><span class="value" id="validityStatus"></span></div>
-            <div class="item"><span class="label"><span class="hindi">इचलान की अवधि समाप्त हो गई है:</span></span><span class="value" id="validityStatusHindi"></span></div>
-            <div class="url">URL: <a href="https://geologymining.jk.gov.in/" style="color: #FFD700; text-decoration: underline;">https://geologymining.jk.gov.in/</a></div>
-        </div>
-        <div class="section">
-            <div class="item"><span class="label">1. Type of mineral concessions:</span><span class="value" id="concessionType"></span></div>
-            <div class="item"><span class="label">Issuing date:</span><span class="value" id="issuingDate"></span></div>
-            <div class="item"><span class="label">Valid upto:</span><span class="value" id="validUpto"></span></div>
-            <div class="item"><span class="label">2. Name & Style of Concessionary:</span><span class="value" id="concessionary"></span></div>
-            <div class="item"><span class="label">3. Location of mineral concession area:</span><span class="value" id="location"></span></div>
-            <div class="item"><span class="label">4. Type of mineral Granted:</span><span class="value" id="mineralGranted"></span></div>
-            <div class="item"><span class="label">5. Quantity of mineral granted:</span><span class="value" id="quantityGranted"></span></div>
-            <div class="item"><span class="label">6. Name & Location of Stone crusher Unit and Holder:</span><span class="value" id="seller"></span></div>
-            <div class="item"><span class="label">7. Type of Finished Products:</span><span class="value" id="finishedProducts"></span></div>
-            <div class="item"><span class="label">8. Quantity of mineral dispatched:</span><span class="value" id="quantityDispatched"></span></div>
-            <div class="item"><span class="label">9. Date & Time of dispatch:</span><span class="value" id="dispatchDate"></span></div>
-            <div class="item"><span class="label">10. Route of the Transportation:</span><span class="value" id="route"></span></div>
-            <div class="item"><span class="label">11. Rate of Mineral:</span><span class="value" id="rate"></span></div>
-            <div class="item"><span class="label">Total Amount (Excluding GST and Transportation charges):</span><span class="value" id="amount"></span></div>
-            <div class="item"><span class="label">12. GST Bill/No.:</span><span class="value" id="gstBill"></span></div>
-            <div class="item"><span class="label">GST Quantity:</span><span class="value" id="gstQuantity"></span></div>
-            <div class="item"><span class="label">GST Amount:</span><span class="value" id="gstAmount"></span></div>
-            <div class="item"><span class="label">13. Vehicle No.:</span><span class="value" id="vehicle"></span></div>
-            <div class="item"><span class="label">14. Name & Address of Consignee / Buyer / Purchaser:</span><span class="value" id="consignee"></span></div>
-            <div class="item"><span class="label">15. Name & Phone No. of Driver:</span><span class="value" id="driver"></span></div>
-        </div>
+  <div class="paper" id="detailsSection">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="emblem" aria-hidden="true">J&amp;K<br>GEOLOGY</div>
+
+      <div class="titleblock">
+        <div class="gov">Government of Jammu &amp; Kashmir</div>
+        <div class="dept">Department of Geology &amp; Mining — <strong>FORM 'A'</strong></div>
+        <div class="rule">[See Rule 38(5), 50(12), 60(1)(v), 70, 71]</div>
+      </div>
+
+      <div class="meta">
+        <div class="big">E-CHALLAN</div>
+        <div class="small">Challan No. : <strong id="challanNo">—</strong></div>
+      </div>
     </div>
-    <script>
-        // Function to generate QR code image URL
-        function generateQR(qrData, challanNo) {
-            const baseURL = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=";
-            const encodedData = encodeURIComponent(`data=${qrData}&ai=${challanNo}`);
-            return `${baseURL}${encodedData}`;
+
+    <hr class="sep"/>
+
+    <!-- Notice -->
+    <div class="notice">
+      Note: The Information mentioned in e-Challan, Such as (Validity and Vehicle No.) should be matched with the information mentioned in the <a href="https://geologymining.jk.gov.in/" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:underline">https://geologymining.jk.gov.in/</a> which can be seen after scanning the QR code encrypted on e-Challan.
+      <span class="hindi">सूचना: ई-चालान में उल्लिखित जानकारी, जैसे (वैधता और वाहन संख्या आदि) का मिलान https://geologymining.jk.gov.in/ में उल्लिखित जानकारी से किया जाना चाहिए, जिसे ई-चालान पर छपे क्यूआर कोड को स्कैन करने के बाद देखा जा सकता है।</span>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <!-- LEFT: details -->
+      <div class="card">
+        <!-- Mineral block -->
+        <div class="mineralTitle">Mineral :</div>
+        <div id="mineralText" class="mineralDetail">—</div>
+
+        <div class="row"><span class="label">Validity from</span><span class="value" id="validFrom">—</span></div>
+        <div class="row"><span class="label">to</span><span class="value" id="validTo">—</span></div>
+        <div class="row"><span class="label">वैधता</span><span class="value" id="validHindi">—</span></div>
+
+        <div class="row"><span class="label">URL:</span><span class="value"><a id="portalUrl" href="https://geologymining.jk.gov.in/" target="_blank" rel="noopener">https://geologymining.jk.gov.in/</a></span></div>
+
+        <hr style="border:none; border-top:1px dashed var(--line); margin:12px 0">
+
+        <!-- numbered fields -->
+        <div class="row"><span class="label">1. Type of mineral concessions</span><span class="value" id="concessionType">—</span></div>
+        <div class="row"><span class="label">Issuing date</span><span class="value" id="issuingDate">—</span></div>
+        <div class="row"><span class="label">Valid upto</span><span class="value" id="validUpto">—</span></div>
+
+        <div class="row"><span class="label">2. Name &amp; Style of Concessionary</span><span class="value" id="concessionary">—</span></div>
+
+        <div class="row"><span class="label">3. Location of mineral concession area</span><span class="value" id="location">—</span></div>
+
+        <div class="row"><span class="label">4. Type of mineral Granted</span><span class="value" id="mineralGranted">—</span></div>
+
+        <div class="row"><span class="label">5. Quantity of mineral granted</span><span class="value" id="quantityGranted">—</span></div>
+
+        <div class="row"><span class="label">6. Name &amp; Location of Stone crusher Unit and Holder</span><span class="value" id="seller">—</span></div>
+
+        <div class="row"><span class="label">7. Type of Finished Products</span><span class="value" id="finishedProducts">—</span></div>
+
+        <div class="row"><span class="label">8. Quantity of mineral dispatched</span><span class="value" id="quantityDispatched">—</span></div>
+
+        <div class="row"><span class="label">9. Date &amp; Time of dispatch</span><span class="value" id="dispatchDate">—</span></div>
+
+        <div class="row"><span class="label">10. Route of the Transportation</span><span class="value" id="route">—</span></div>
+
+        <div class="row"><span class="label">11. Rate of Mineral</span><span class="value" id="rate">—</span></div>
+
+        <div class="row"><span class="label">Total Amount (Excl. GST & Transport)</span><span class="value" id="amount">—</span></div>
+
+        <div class="row"><span class="label">12. GST Bill/No.</span><span class="value" id="gstBill">—</span></div>
+
+        <div class="row"><span class="label">GST Quantity</span><span class="value" id="gstQuantity">—</span></div>
+
+        <div class="row"><span class="label">GST Amount</span><span class="value" id="gstAmount">—</span></div>
+
+        <div class="row"><span class="label">13. Vehicle No.</span><span class="value" id="vehicle">—</span></div>
+
+        <div class="row"><span class="label">14. Name &amp; Address of Consignee / Buyer / Purchaser</span><span class="value" id="consignee">—</span></div>
+
+        <div class="row"><span class="label">15. Name &amp; Phone No. of Driver</span><span class="value" id="driver">—</span></div>
+
+        <div class="signnote">Self Approved by Mineral Concessionary</div>
+      </div>
+
+      <!-- RIGHT: QR -->
+      <div class="qrcard">
+        <div class="qrbox" id="qrBox">
+          <img id="qrImage" src="" alt="QR code" style="display:none"/>
+        </div>
+        <div class="url">Scan to verify on portal</div>
+        <div class="muted-small" id="genInfo" style="margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:10px; font-size:13px; color:var(--muted); display:flex; justify-content:space-between">
+      <div id="footerLeft">Generated from vendor data</div>
+      <div id="footerRight" class="muted-small"></div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ---------- Config ---------- */
+    const CSV_PATH = 'data.csv';   // adjust if your CSV is in a different location
+    const LOCAL_QR_FILENAME = 'qr.png';
+
+    // helper: safe float parse
+    function safeFloat(v){ const n = parseFloat((v||'').replace(/[^\d.\-]/g,'')); return isNaN(n) ? 0 : n; }
+
+    // parse "DD-MM-YYYY HH:MM" with optional AM/PM
+    function parseDDMMYYYY(s){
+      if(!s) return null;
+      // normalize whitespace
+      s = s.trim().replace(/\s+/g,' ');
+      const m = s.match(/(\d{1,2})-(\d{1,2})-(\d{4})\s+(\d{1,2}):(\d{2})(?:\s*(AM|PM|am|pm))?/);
+      if(!m) return null;
+      let [_, dd, mm, yyyy, hh, min, ampm] = m;
+      dd=dd.padStart(2,'0'); mm=mm.padStart(2,'0'); hh=hh.padStart(2,'0');
+      let hour = parseInt(hh,10);
+      if(ampm){ ampm = ampm.toUpperCase(); if(ampm==='PM' && hour<12) hour+=12; if(ampm==='AM' && hour===12) hour=0; }
+      const iso = `${yyyy}-${mm}-${dd}T${String(hour).padStart(2,'0')}:${min}:00`;
+      return new Date(iso);
+    }
+
+    function generateQrApi(data){
+      return 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=' + encodeURIComponent(data);
+    }
+
+    function setQrImageTry(localPath, apiUrl){
+      const img = document.getElementById('qrImage');
+      const qrBox = document.getElementById('qrBox');
+      img.onload = () => { img.style.display='block'; qrBox.style.background='#fff'; };
+      img.onerror = () => {
+        if(apiUrl){
+          img.src = apiUrl;
+        } else {
+          // show simple placeholder text if neither local nor API worked
+          qrBox.innerHTML = '<div style="color:#777; font-size:13px;">(QR not available)</div>';
         }
+      };
+      img.src = localPath;
+    }
 
-        // Function to check if validity is expired
-        function isValidityExpired(validityStart, validityEnd) {
-            const currentDate = new Date('2025-10-26T00:25:00+05:30'); // October 26, 2025, 12:25 AM IST
-            const startDate = new Date(validityStart.replace(/(\d{2})-(\d{2})-(\d{4})\s(\d{2}):(\d{2})\s(PM|AM)/i, '$2/$1/$3 $4:$5 $6'));
-            const endDate = new Date(validityEnd.replace(/(\d{2})-(\d{2})-(\d{4})\s(\d{2}):(\d{2})\s(PM|AM)/i, '$2/$1/$3 $4:$5 $6'));
-            return endDate < currentDate ? ' <span class="expired">(Expired)</span>' : '';
+    // Fill fields safely
+    function setText(id, text){
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.textContent = (text !== undefined && text !== null && String(text).trim() !== '') ? String(text) : '—';
+    }
+
+    // Once DOM ready, parse CSV
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('footerRight').textContent = new Date().toLocaleString();
+
+      Papa.parse(CSV_PATH, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: (res) => {
+          if(!res || !res.data || res.data.length === 0){
+            // try fetch without header (fallback)
+            document.getElementById('infoCard')?.insertAdjacentHTML('afterbegin','<div style="color:#777">CSV empty or not found.</div>');
+            return;
+          }
+          // choose first useful row (you may modify this selection logic)
+          const row = res.data[0];
+
+          // utility get function tolerating different header names
+          const get = (names) => {
+            for(const n of names){
+              if(n in row && row[n] !== undefined && row[n] !== null && String(row[n]).trim() !== '') return row[n];
+              const found = Object.keys(row).find(k => k.toLowerCase() === n.toLowerCase());
+              if(found) return row[found];
+            }
+            return '';
+          };
+
+          // fields (adapt if your CSV uses different headers)
+          const challanNo = get(['challanNo','ChallanNo','Challan No','challan_no','challan_no']);
+          const mineral    = get(['mineral','Mineral']);
+          const validityStart = get(['validityStart','valid_from','valid_from_date','valid_from']);
+          const validityEnd   = get(['validityEnd','valid_to','valid_to_date','valid_to']);
+          const concessionType = get(['concessionType','type','type_of_mineral']);
+          const issuingDate = get(['issuingDate','issuedAt','issued_date']);
+          const validUpto   = get(['validUpto','valid_upto']);
+          const concessionary = get(['concessionary','Concessionary','seller','partyName']);
+          const location = get(['location','Location','area']);
+          const mineralGranted = get(['mineralGranted','mineral_granted','MineralGranted']);
+          const qtyGranted = get(['quantityGranted','quantity_granted','qtyGranted']);
+          const seller = get(['seller','stone_crusher','unit','Seller']);
+          const finished = get(['finishedProducts','finished_products','finished']);
+          const qtyDispatched = get(['quantityDispatched','qty_dispatched','Quantity']);
+          const dispatchDate = get(['dispatchDate','dispatch_date','issuedAt']);
+          const route = get(['route','Route']);
+          const rate = safeFloat(get(['rate','Rate']));
+          const amount = safeFloat(get(['amount','Amount','total_amount']));
+          const gstPerc = safeFloat(get(['gst','GST']));
+          const gstBill = get(['gstBill','GSTBill','GST Bill/No']);
+          const vehicle = get(['vehicle','Vehicle No','vehicle_no','VehicleNo']);
+          const consignee = get(['consignee','buyer','purchaser','consignee']);
+          const driver = get(['driver','driver_phone','driverPhone','Driver']);
+          const qrData = get(['qrData','qr','qr_url','qrlink']);
+
+          // populate DOM
+          setText('challanNo', challanNo || '—');
+          setText('mineralText', mineral || mineralGranted || '—');
+
+          // validity parsing + display
+          const startDt = parseDDMMYYYY(validityStart) || (validityStart ? new Date(validityStart) : null);
+          const endDt   = parseDDMMYYYY(validityEnd)   || (validityEnd ? new Date(validityEnd) : null);
+          setText('validFrom', startDt ? startDt.toLocaleString() : (validityStart || '—'));
+          setText('validTo', endDt ? endDt.toLocaleString() : (validityEnd || '—'));
+          setText('validHindi', (validityStart ? validityStart : '—') + ' से ' + (validityEnd ? validityEnd : '—') + ' तक');
+
+          setText('concessionType', concessionType || 'OTHER');
+          setText('issuingDate', issuingDate || '30-07-2021');
+          setText('validUpto', validUpto || '29-07-2026');
+          setText('concessionary', concessionary || '—');
+          setText('location', location || '—');
+          setText('mineralGranted', mineralGranted || '—');
+          setText('quantityGranted', qtyGranted || '—');
+          setText('seller', seller || '—');
+          setText('finishedProducts', finished || mineralGranted || '—');
+          setText('quantityDispatched', qtyDispatched || '—');
+          setText('dispatchDate', dispatchDate || validityStart || '—');
+          setText('route', route || '—');
+          setText('rate', rate ? `Rs. ${rate.toFixed(2)}` : '—');
+          setText('amount', amount ? `Rs. ${amount.toFixed(2)}` : '—');
+          setText('gstBill', gstBill || '—');
+          setText('gstQuantity', gstPerc ? `${gstPerc}%` : '—');
+          setText('gstAmount', (gstPerc && amount) ? `Rs. ${(amount * gstPerc/100).toFixed(2)}` : '—');
+          setText('vehicle', vehicle || '—');
+          setText('consignee', consignee || '—');
+          setText('driver', driver || '—');
+
+          // QR: try local qr.png first, else generate via api using qrData or by building known URL if you have 'data' & 'ai' parts in CSV
+          if(qrData && String(qrData).trim() !== ''){
+            setQrImageTry(LOCAL_QR_FILENAME, generateQrApi(qrData));
+          } else {
+            // fallback: if challanNo looks like the 'ai' or similar, you may build a known link; otherwise just show local
+            setQrImageTry(LOCAL_QR_FILENAME, '');
+          }
+
+          // show generation info
+          document.getElementById('genInfo').textContent = 'Loaded from CSV';
+        }, // complete
+        error: (err) => {
+          console.error('CSV error', err);
+          document.getElementById('detailsSection').insertAdjacentHTML('afterbegin', '<div style="color:#a33">Error loading CSV</div>');
         }
-
-        // Fetch and display CSV data
-        fetch('data.csv')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('CSV file not found or inaccessible. Please ensure "data.csv" is in the repository root.');
-                }
-                return response.text();
-            })
-            .then(data => {
-                const rows = data.trim().split('\n').slice(1); // Skip header
-                rows.forEach(row => {
-                    if (!row || row.trim() === '') return;
-                    const cols = row.split(',');
-                    if (cols.length < 20) return; // Expect expanded CSV with 20 columns
-
-                    const [code, status, challanNo, vehicle, driverPhone, quantityDispatched, route, gst, amount, issuedAt, concessionary, location, mineralGranted, quantityGranted, seller, consignee, mineral, validityStart, validityEnd, qrData] = cols;
-                    const isValid = status && status.toLowerCase() === 'published';
-                    const expiredNote = isValidityExpired(validityStart, validityEnd);
-                    const qrUrl = qrData ? generateQR(qrData, challanNo) : '';
-
-                    // Set QR
-                    if (qrUrl) {
-                        document.getElementById('qrImage').src = qrUrl;
-                        document.getElementById('qrPlaceholder').style.display = 'none';
-                    }
-
-                    // Set validity status
-                    document.getElementById('validityStatus').textContent = isValid ? 'Valid' : 'Expired';
-                    document.getElementById('validityStatusHindi').textContent = isValid ? 'वैध' : 'इचलान की अवधि समाप्त हो गई है';
-
-                    // Set details
-                    document.getElementById('challanNo').textContent = challanNo || 'N/A';
-                    document.getElementById('concessionType').textContent = 'OTHER'; // Static for now
-                    document.getElementById('issuingDate').textContent = '30-07-2021'; // Static for now
-                    document.getElementById('validUpto').textContent = '29-07-2026'; // Static for now
-                    document.getElementById('concessionary').textContent = concessionary || 'N/A';
-                    document.getElementById('location').textContent = location || 'N/A';
-                    document.getElementById('mineralGranted').textContent = mineralGranted || 'N/A';
-                    document.getElementById('quantityGranted').textContent = quantityGranted || 'N/A';
-                    document.getElementById('seller').textContent = seller || 'N/A';
-                    document.getElementById('finishedProducts').textContent = mineral || 'N/A';
-                    document.getElementById('quantityDispatched').textContent = quantityDispatched || 'N/A';
-                    document.getElementById('dispatchDate').textContent = validityStart || 'N/A';
-                    document.getElementById('route').textContent = route || 'N/A';
-                    document.getElementById('rate').textContent = `Rs. ${gst ? (amount / quantityDispatched * 100 / (100 + gst)).toFixed(2) : 'N/A'}`;
-                    document.getElementById('amount').textContent = `Rs. ${amount || 'N/A'}`;
-                    document.getElementById('gstBill').textContent = '01ACOFS3764P1ZI'; // Static for now
-                    document.getElementById('gstQuantity').textContent = `${gst || 'N/A'}%`;
-                    document.getElementById('gstAmount').textContent = `Rs. ${gst ? (amount * gst / 100).toFixed(2) : 'N/A'}`;
-                    document.getElementById('vehicle').textContent = vehicle || 'N/A';
-                    document.getElementById('consignee').textContent = consignee || 'N/A';
-                    document.getElementById('driver').textContent = `${driverPhone ? driverPhone.split(',')[0] : 'N/A'}, ${driverPhone ? driverPhone.split(',')[1] : 'N/A'}`;
-                });
-            })
-            .catch(error => {
-                console.error('Error fetching CSV:', error);
-                document.getElementById('detailsSection').innerHTML = `<p class="note">डेटा लोड करने में त्रुटि: ${error.message}</p>`;
-            });
-    </script>
+      });
+    });
+  </script>
 </body>
 </html>
